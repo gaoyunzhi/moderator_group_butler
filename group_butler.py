@@ -109,8 +109,8 @@ def handleWildAdmin(msg):
 		msg.delete()
 
 @log_on_fail(debug_group)
-def handleGroup(update, context):
-	msg = update.effective_message
+def handleGroupCommand(update, context):
+	msg = update.message
 	if not msg:
 		return
 
@@ -128,19 +128,26 @@ def handleGroup(update, context):
 def handleJoin(update, context):
 	msg = update.message
 	setting = gs.get(msg.chat_id)
+	
 	kicked = False
 	for member in msg.new_chat_members:
-		if db.shouldKick(member, setting):
+		if setting.shouldKick(member):
 			td.delete(msg, 0)
 			kicked = True
 			kick(msg, member)
-	if not kicked:
-		td.delete(msg, 5)
-		greeting = gs.getGreeting(msg.chat_id)
-		if greeting:
-			replyText(msg, greeting, 5)
+	if kicked:
+		return
 
-def deleteMsgHandle(update, context):
+	if setting.delete_join_left:
+		if setting.greeting:
+			td.delete(msg, 5)
+		else:
+			td.delete(msg, 0)
+
+	if setting.greeting:
+		replyText(msg, setting.greeting, 5)
+
+def handleDelete(update, context):
 	msg = update.message
 	if gs.get(msg.chat_id).delete_join_left:
 		update.message.delete()
@@ -174,8 +181,9 @@ kick_if_name_longer_than_status - show status for kick_if_name_longer_than
 dp = updater.dispatcher
 dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handleJoin), group=1)
 dp.add_handler(MessageHandler(Filters.status_update.left_chat_member, handleDelete), group = 2)
-dp.add_handler(MessageHandler(Filters.group & Filters.command, handleGroup), group = 3)
-dp.add_handler(MessageHandler(Filters.private, handlePrivate), group = 4)
+dp.add_handler(MessageHandler(Filters.group & Filters.command, handleGroupCommand), group = 3)
+dp.add_handler(MessageHandler(Filters.group & Filters.forwarded, handleGroupForward), group = 4)
+dp.add_handler(MessageHandler(Filters.private, handlePrivate), group = 5)
 
 updater.start_polling()
 updater.idle()
