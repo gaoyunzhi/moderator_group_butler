@@ -69,6 +69,7 @@ def handleGroupCommand(update, context):
 
 	setting = gs.get(msg.chat_id)
 	r = setting.update(msg.text)
+	gs.save()
 	replyText(msg, r, 0.1)
 	td.delete(msg, 0)
 
