@@ -33,7 +33,7 @@ def kick(msg, member):
 
 def isAdminMsg(msg):
 	for admin in tele.get_chat_administrators(msg.chat_id):
-		if admin.user.id == msg.from_user.id and (admin.can_delete_messages or not admin.can_be_edited):
+		if admin.user.id == msg.from_user.id:
 			return True
 	return False
 
@@ -108,21 +108,45 @@ def handleWildAdmin(msg):
 		td.delete(msg.reply_text(r), 0.1)
 		msg.delete()
 
+commands = ['kick_if_name_contains_status',
+	'kick_if_name_contains_add',
+	'kick_if_name_contains_remove',
+	'delete_if_message_is_forward_on',
+	'delete_if_message_is_forward_off',
+	'delete_if_message_is_forward_status',
+	'delete_join_left_message_on',
+	'delete_join_left_message_off',
+	'delete_join_left_message_status',
+	'welcome_message_off',
+	'welcome_message_set',
+	'welcome_message_status',
+	'warning_on_message_delete_off',
+	'warning_on_message_delete_set',
+	'warning_on_message_delete_status',
+	'kick_if_name_longer_than_off',
+	'kick_if_name_longer_than_set',
+	'kick_if_name_longer_than_status']
+
 @log_on_fail(debug_group)
 def handleGroupCommand(update, context):
 	msg = update.message
-	if not msg:
+	if not matchKey(msg.text, commands):
 		return
 
-	if msg.chat_id != debug_group.id and \
-		not gs.isModerationDisabled(msg.chat_id):
-		handleGroupInternal(msg)
+	if not isAdminMsg(msg):
+		return
 
-	if msg.text and msg.text.startswith('/m') and isAdminMsg(msg):
-		handleWildAdmin(msg)
+	handleWildAdmin(msg)
 
-	if msg.from_user.id == BOT_OWNER:
-		handleAdmin(msg)
+@log_on_fail(debug_group)
+def handleGroupForward(update, context):
+	msg = update.message
+	setting = gs.get(msg.chat_id)
+	if not setting.delete_if_message_is_forward:
+		return
+	if isAdminMsg(msg):
+		return
+	td.delete(msg, 0)
 
 @log_on_fail(debug_group)
 def handleJoin(update, context):
