@@ -1,14 +1,8 @@
 from telegram_util import matchKey, getDisplayUser, cnWordCount
 import yaml
 import os
-import threading
 
 default_reason = '非常抱歉，机器人暂时无法判定您的消息，已转交人工审核。我们即将删除您这条发言，请注意保存。'
-
-def commit():
-    # see if I need to deal with race condition
-    command = 'git add . > /dev/null 2>&1 && git commit -m commit > /dev/null 2>&1 && git push -u -f > /dev/null 2>&1'
-    threading.Timer(60, lambda: os.system(command)).start()
 
 def highRiskUsr(user):
     try:

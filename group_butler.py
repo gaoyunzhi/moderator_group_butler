@@ -6,20 +6,15 @@ from telegram import ChatPermissions
 from telegram_util import getDisplayUser, log_on_fail, TimedDeleter, matchKey
 import yaml
 from db import DB, GroupSetting
-from record_delete import recordDelete
 
-unblock_requests = {}
-chats = set()
 td = TimedDeleter()
 
-with open('CREDENTIALS') as f:
-    CREDENTIALS = yaml.load(f, Loader=yaml.FullLoader)
+with open('credentials') as f:
+    credentials = yaml.load(f, Loader=yaml.FullLoader)
 
-updater = Updater(CREDENTIALS['token'], use_context=True)
+updater = Updater(credentials['token'], use_context=True)
 tele = updater.bot
-debug_group = tele.get_chat(-1001198682178)
-this_bot = tele.id
-BOT_OWNER = CREDENTIALS['owner']
+debug_group = tele.get_chat(420074357)
 db = DB()
 gs = GroupSetting()
 
@@ -35,62 +30,6 @@ def kick(msg, member):
 			tele.kick_chat_member(msg.chat.id, member.id)
 	except Exception as e:
 		pass
-
-@log_on_fail(debug_group)
-def handleJoin(update, context):
-	msg = update.message
-	kicked = False
-	for member in msg.new_chat_members:
-		if db.shouldKick(member):
-			td.delete(msg, 0)
-			kicked = True
-			kick(msg, member)
-	if not kicked:
-		td.delete(msg, 5)
-		greeting = gs.getGreeting(msg.chat_id)
-		if greeting:
-			replyText(msg, greeting, 5)
-
-def getAdminActionTarget(msg):
-	if not msg.reply_to_message:
-		return
-	for item in msg.reply_to_message.entities:
-		if item['type'] == 'text_mention':
-			return item.user
-	if msg.chat_id != debug_group.id:
-		return msg.reply_to_message.from_user
-	return msg.reply_to_message.forward_from
-
-def adminAction(db_action, msg, display_action):
-	target = getAdminActionTarget(msg)
-	if not target or not target.id:
-		return
-	db.record(db_action, target)
-	if msg.chat_id != debug_group.id:
-		if db_action == 'KICKLIST':
-			msg.reply_to_message.delete()
-		r = msg.chat.send_message('-')
-		r.delete()
-		msg.delete()
-	debug_group.send_message(
-		text=getDisplayUser(target) + ': ' + display_action,
-		parse_mode='Markdown')
-
-@log_on_fail(debug_group)
-def handleAutoUnblock(usr = None, chat = None):
-	global unblock_requests
-	global chats
-	p = ChatPermissions(
-		can_send_messages=True, 
-		can_send_media_messages=True, 
-		can_send_polls=True, 
-		can_add_web_page_previews=True)
-	for u in (usr or unblock_requests.keys()):
-		for c in (chat or chats):
-			try:
-				r = tele.restrict_chat_member(c, u, p)
-			except:
-				pass
 
 def isAdminMsg(msg):
 	for admin in tele.get_chat_administrators(msg.chat_id):
@@ -148,18 +87,6 @@ def handleCommand(msg):
 		r = db.badText(msg.text)
 		msg.chat.send_message('result: ' + str(r))
 
-def handleAdmin(msg):
-	# TODO: check do I need to mute anyone? Why not just kick them?
-	if msg.text in ['mute', 'm']:
-		adminAction('MUTELIST', msg, 'mute')
-	if msg.text in ['kick', 'k']:
-		adminAction('KICKLIST', msg, 'kick')
-	if msg.text in ['white', 'w']:  
-		adminAction('WHITELIST', msg, 'whitelist')
-	if msg.text in ['reset', 'r']:  
-		adminAction(None, msg, 'reset')
-	handleCommand(msg)
-
 def handleWildAdminInternal(msg):
 	if matchKey(msg.text, ['enable_moderation', 'em']):
 		gs.setDisableModeration(msg.chat_id, False)
@@ -198,26 +125,56 @@ def handleGroup(update, context):
 		handleAdmin(msg)
 
 @log_on_fail(debug_group)
-def handlePrivate(update, context):
-	global unblock_requests
-	update.message.reply_text(
-		'''For group owner, Add me to groups and promote me as admin, I will do magic for you. 
-
-For group member requesting unblock, your request has recieved.''')
-	usr = update.effective_user
-	if usr.id not in unblock_requests:
-		unblock_requests[usr.id] = usr
-		handleAutoUnblock(usr = [usr.id])
+def handleJoin(update, context):
+	msg = update.message
+	setting = gs.get(msg.chat_id)
+	kicked = False
+	for member in msg.new_chat_members:
+		if db.shouldKick(member, setting):
+			td.delete(msg, 0)
+			kicked = True
+			kick(msg, member)
+	if not kicked:
+		td.delete(msg, 5)
+		greeting = gs.getGreeting(msg.chat_id)
+		if greeting:
+			replyText(msg, greeting, 5)
 
 def deleteMsgHandle(update, context):
-	update.message.delete()
+	msg = update.message
+	if gs.get(msg.chat_id).delete_join_left:
+		update.message.delete()
+
+@log_on_fail(debug_group)
+def handlePrivate(update, context):
+	update.message.reply_text('''
+Please add me to your group and grant "ban" and "delete" permission.
+
+Possible Commands:
+kick_if_name_contains_status - show the blacklist for username
+kick_if_name_contains_add - add word to username blacklist
+kick_if_name_contains_remove - remove word from username blacklist
+delete_if_message_is_forward_on - delete if message is forward
+delete_if_message_is_forward_off - turn off delete_if_message_is_forward
+delete_if_message_is_forward_status - show status for delete_if_message_is_forward
+delete_join_left_message_on - delete join left message
+delete_join_left_message_off - turn off delete_join_left_message
+delete_join_left_message_status - show status for delete_join_left_message
+welcome_message_off - turn off welcome message
+welcome_message_set - set welcome message
+welcome_message_status - show welcome message 
+warning_on_message_delete_off - hide warning when bot delete user's message
+warning_on_message_delete_set - set warning message when bot delete user's message
+warning_on_message_delete_status - show the current warning message when bot delete user's message
+kick_if_name_longer_than_off - turn off kick_if_name_longer_than
+kick_if_name_longer_than_set - kick if name longer than how many characters
+kick_if_name_longer_than_status - show status for kick_if_name_longer_than
+''')
 
 dp = updater.dispatcher
 dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handleJoin), group=1)
-dp.add_handler(MessageHandler(Filters.status_update.left_chat_member, deleteMsgHandle), group = 2)
-dp.add_handler(MessageHandler(Filters.group & \
-		(~ Filters.status_update.left_chat_member) & \
-		(~ Filters.status_update.new_chat_members), handleGroup), group = 3)
+dp.add_handler(MessageHandler(Filters.status_update.left_chat_member, handleDelete), group = 2)
+dp.add_handler(MessageHandler(Filters.group & Filters.command, handleGroup), group = 3)
 dp.add_handler(MessageHandler(Filters.private, handlePrivate), group = 4)
 
 updater.start_polling()
