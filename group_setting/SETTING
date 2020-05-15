@@ -1,5 +1,5 @@
 -1001273934196:
-  delete_if_message_is_forward: false
+  delete_if_message_is_forward: true
   delete_join_left: true
   greeting: null
   kick_if_name_contains:
