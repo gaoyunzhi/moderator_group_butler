@@ -1,5 +1,6 @@
 from telegram_util import matchKey, getDisplayUser, splitCommand
 import yaml
+import threading
 
 # TODO: see if I want to accept command without '/'
 # TODO: for blacklist ban, scan through all member
@@ -104,5 +105,7 @@ class GroupSetting(object):
 
     def save(self):
         with open(self.fn, 'w') as f:
-            f.write(yaml.dump(self.setting, sort_keys=True, indent=2))
+            f.write(yaml.dump(
+                {x: self.setting[x].__dict__ for x in self.setting}, 
+                sort_keys=True, indent=2))
         commit()

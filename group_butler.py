@@ -57,9 +57,19 @@ kick_if_name_longer_than_status - show status for kick_if_name_longer_than'''
 
 commands = [x.split(' - ')[0] for x in commands_detail.split('\n')]
 
+help_message = '''
+Please add me to your group and grant "ban" and "delete" permission.
+
+Possible Commands:
+''' + commands_detail
+
 @log_on_fail(debug_group)
 def handleGroupCommand(update, context):
 	msg = update.message
+	if 'moderator_show_commands' in msg.text:
+		replyText(msg, help_message, 5)
+		td.delete(msg, 0.1)
+
 	if not matchKey(msg.text, commands):
 		return
 
@@ -69,9 +79,12 @@ def handleGroupCommand(update, context):
 
 	setting = gs.get(msg.chat_id)
 	r = setting.update(msg.text)
-	gs.save()
-	replyText(msg, r, 0.1)
-	td.delete(msg, 0)
+	if 'status' not in msg.text:
+		gs.save()
+		replyText(msg, r, 0.1)
+	else:
+		replyText(msg, r, 5)
+	td.delete(msg, 0.1)
 
 @log_on_fail(debug_group)
 def handleGroupForward(update, context):
@@ -112,13 +125,7 @@ def handleDelete(update, context):
 
 @log_on_fail(debug_group)
 def handlePrivate(update, context):
-	# testing
-	raise Exception('123')
-	update.message.reply_text('''
-Please add me to your group and grant "ban" and "delete" permission.
-
-Possible Commands:
-''' + commands_detail)
+	update.message.reply_text(help_message)
 
 dp = updater.dispatcher
 dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handleJoin), group=1)
