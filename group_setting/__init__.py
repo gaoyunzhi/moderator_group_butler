@@ -3,11 +3,7 @@ import yaml
 import threading
 import os
 
-# TODO: see if I want to accept command without '/'
-# TODO: for blacklist ban, scan through all member
-
 def commit():
-    # see if I need to deal with race condition
     command = 'git add . > /dev/null 2>&1 && git commit -m commit > /dev/null 2>&1 && git push -u -f > /dev/null 2>&1'
     threading.Timer(60, lambda: os.system(command)).start()
 
