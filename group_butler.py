@@ -64,11 +64,12 @@ def handleGroupCommand(update, context):
 		return
 
 	if not isAdminMsg(msg):
+		td.delete(msg, 0)
 		return
 
 	setting = gs.get(msg.chat_id)
 	r = setting.update(msg.text)
-	td.delete(msg.reply_text(r), 0.1)
+	replyText(msg, r, 0.1)
 	td.delete(msg, 0)
 
 @log_on_fail(debug_group)
@@ -79,6 +80,8 @@ def handleGroupForward(update, context):
 		return
 	if isAdminMsg(msg):
 		return
+	if setting.warning_on_message_delete:
+		replyText(msg, setting.warning_on_message_delete, 5)
 	td.delete(msg, 0)
 
 @log_on_fail(debug_group)
@@ -96,10 +99,7 @@ def handleJoin(update, context):
 		return
 
 	if setting.delete_join_left:
-		if setting.greeting:
-			td.delete(msg, 5)
-		else:
-			td.delete(msg, 0)
+		td.delete(msg, 5)
 
 	if setting.greeting:
 		replyText(msg, setting.greeting, 5)
@@ -111,6 +111,8 @@ def handleDelete(update, context):
 
 @log_on_fail(debug_group)
 def handlePrivate(update, context):
+	# testing
+	raise Exception('123')
 	update.message.reply_text('''
 Please add me to your group and grant "ban" and "delete" permission.
 

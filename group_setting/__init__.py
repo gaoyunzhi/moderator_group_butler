@@ -1,35 +1,95 @@
-from telegram_util import matchKey, getDisplayUser, cnWordCount
+from telegram_util import matchKey, getDisplayUser, splitCommand
 import yaml
-import os
 
-default_reason = '非常抱歉，机器人暂时无法判定您的消息，已转交人工审核。我们即将删除您这条发言，请注意保存。'
+# TODO: once stabled, mark setting as gitignore
+# TODO: see if I want to accept command without '/'
+# TODO: for blacklist ban, scan through all member
 
-def highRiskUsr(user):
-    try:
-        if int(user.first_name) > 10000:
+class Setting(object):
+    def __init__(self, raw):
+        self.delete_if_message_is_forward = (
+            raw.get('delete_if_message_is_forward', True))
+        self.greeting = raw.get('greeting')
+        self.delete_join_left = raw.get('delete_join_left', True)
+        self.kick_if_name_longer_than = raw.get('kick_if_name_longer_than', 0)
+        self.kick_if_name_contains = raw.get('kick_if_name_contains', [])
+        self.warning_on_message_delete = raw.get('warning_on_message_delete')
+
+    def shouldKick(self, user):
+        if (self.kick_if_name_longer_than and 
+            len(user.first_name or '') + len(user.last_name or '') > 
+                self.kick_if_name_longer_than):
             return True
-    except:
-        pass
-    return False
-
-def mediumRiskUsr(user):
-    if user.username:
+        if matchKey(getDisplayUser(user), self.kick_if_name_contains):
+            return True
         return False
-    if not user.last_name:
-        return True
-    if (user.last_name in user.first_name) or \
-        (user.first_name in user.last_name):
-        return True
-    return False
+
+    def update(self, text):
+        command, text = splitCommand(text)
+
+        if 'delete_if_message_is_forward' in command:
+            if 'delete_if_message_is_forward_on' in command:
+                self.delete_if_message_is_forward = True
+            if 'delete_if_message_is_forward_off' in command:
+                self.delete_if_message_is_forward = False
+            return 'delete_if_message_is_forward: ' + str(self.delete_if_message_is_forward)
+
+        if 'delete_join_left_message' in command:
+            if 'delete_join_left_message_on' in command:
+                self.delete_join_left = True
+            if 'delete_join_left_message_off' in command:
+                self.delete_join_left = False
+            return 'delete_join_left_message: ' + str(self.delete_join_left)
+
+        if 'welcome_message' in command:
+            if 'welcome_message_off' in command:
+                self.greeting = ''
+            if 'welcome_message_set' in command:
+                self.greeting = text
+            if self.greeting:
+                return 'welcome_message: ' + self.greeting
+            else:
+                return 'no welcome mesage'
+
+        if 'warning_on_message_delete' in command:
+            if 'warning_on_message_delete_off' in command:
+                self.warning_on_message_delete = ''
+            if 'warning_on_message_delete_set' in command:
+                self.warning_on_message_delete = text
+            if self.warning_on_message_delete:
+                return 'warning_on_message_delete: ' + self.warning_on_message_delete
+            else:
+                return 'no warning on message delete'
+        # warning_on_message_delete_off - hide warning when bot delete user's message
+        # warning_on_message_delete_set - set warning message when bot delete user's message
+        # kick_if_name_longer_than_off - turn off kick_if_name_longer_than
+        # kick_if_name_longer_than_set - kick if name longer than how many characters
+
+        if 'kick_if_name_longer_than' in command:
+            if 'kick_if_name_longer_than_off' in command:
+                self.kick_if_name_longer_than = 0
+            if 'kick_if_name_longer_than_set' in command:
+                
+
+        if 'kick_if_name_contains_status' in text:
+            return 'kick_if_name_contains: ' + str(self.kick_if_name_contains)
+        
+        if 'kick_if_name_longer_than_status' in text:
+            if self.kick_if_name_longer_than:
+                return 'kick if name longer than %d characters' % self.kick_if_name_longer_than
+            else:
+                return 'kick_if_name_longer_than not set'
+
+
+# kick_if_name_contains_add - add word to username blacklist
+# kick_if_name_contains_remove - remove word from username blacklist
 
 class GroupSetting(object):
     def __init__(self):
-        with open('db/SETTING') as f:
-            content = yaml.load(f, Loader=yaml.FullLoader)
-        self.greeting = content.get('greeting', {})
-        self.disable_moderation = content.get('disable_moderation', [])
+        with open('group_setting/SETTING') as f:
+            self.setting = yaml.load(f, Loader=yaml.FullLoader)
 
-    def getGreeting(self, chat_id):
+    def get(self, chat_id):
         return self.greeting.get(chat_id, '欢迎新朋友！新朋友请自我介绍~')
 
     def setGreeting(self, chat_id, text):
