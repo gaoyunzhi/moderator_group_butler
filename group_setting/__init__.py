@@ -1,6 +1,7 @@
 from telegram_util import matchKey, getDisplayUser, splitCommand
 import yaml
 import threading
+import os
 
 # TODO: see if I want to accept command without '/'
 # TODO: for blacklist ban, scan through all member
