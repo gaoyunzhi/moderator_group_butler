@@ -36,36 +36,37 @@ def isAdminMsg(msg):
 			return True
 	return False
 
-commands_detail = '''kick_if_name_contains_status - show the blacklist for username
-kick_if_name_contains_add - add word to username blacklist
-kick_if_name_contains_remove - remove word from username blacklist
-delete_if_message_is_forward_on - delete if message is forward
-delete_if_message_is_forward_off - turn off delete_if_message_is_forward
-delete_if_message_is_forward_status - show status for delete_if_message_is_forward
-delete_join_left_message_on - delete join left message
-delete_join_left_message_off - turn off delete_join_left_message
-delete_join_left_message_status - show status for delete_join_left_message
-welcome_message_off - turn off welcome message
-welcome_message_set - set welcome message
-welcome_message_status - show welcome message 
-warning_on_message_delete_off - hide warning when bot delete user's message
-warning_on_message_delete_set - set warning message when bot delete user's message
-warning_on_message_delete_status - show the current warning message when bot delete user's message
-kick_if_name_longer_than_off - turn off kick_if_name_longer_than
-kick_if_name_longer_than_set - kick if name longer than how many characters
-kick_if_name_longer_than_status - show status for kick_if_name_longer_than'''
-
-commands = [x.split(' - ')[0] for x in commands_detail.split('\n')]
+commands = ['kick_if_name_contains_status',
+'kick_if_name_contains_add',
+'kick_if_name_contains_remove',
+'delete_if_message_is_forward_on',
+'delete_if_message_is_forward_off',
+'delete_if_message_is_forward_status',
+'delete_join_left_message_on',
+'delete_join_left_message_off',
+'delete_join_left_message_status',
+'welcome_message_off',
+'welcome_message_set',
+'welcome_message_status',
+'warning_on_message_delete_off',
+'warning_on_message_delete_set',
+'warning_on_message_delete_status',
+'kick_if_name_longer_than_off',
+'kick_if_name_longer_than_set',
+'kick_if_name_longer_than_status',]
 
 help_message = '''
 Please add me to your group and grant "ban" and "delete" permission.
 
 Possible Commands:
-''' + commands_detail
+''' + '\n'.join(commands)
 
 @log_on_fail(debug_group)
 def handleGroupCommand(update, context):
 	msg = update.message
+	if not msg or not msg.text:
+		return 
+
 	if 'moderator_show_commands' in msg.text:
 		replyText(msg, help_message, 5)
 		td.delete(msg, 0.1)
@@ -130,7 +131,7 @@ def handlePrivate(update, context):
 dp = updater.dispatcher
 dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, handleJoin), group=1)
 dp.add_handler(MessageHandler(Filters.status_update.left_chat_member, handleDelete), group = 2)
-dp.add_handler(MessageHandler(Filters.group & Filters.command, handleGroupCommand), group = 3)
+dp.add_handler(MessageHandler(Filters.group, handleGroupCommand), group = 3)
 dp.add_handler(MessageHandler(Filters.group & Filters.forwarded, handleGroupForward), group = 4)
 dp.add_handler(MessageHandler(Filters.private, handlePrivate), group = 5)
 

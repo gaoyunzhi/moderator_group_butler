@@ -2,6 +2,7 @@
   delete_if_message_is_forward: false
   delete_join_left: true
   greeting: null
-  kick_if_name_contains: []
-  kick_if_name_longer_than: 0
+  kick_if_name_contains:
+  - "\u56DB\u4EF6\u5957"
+  kick_if_name_longer_than: 20
   warning_on_message_delete: null
