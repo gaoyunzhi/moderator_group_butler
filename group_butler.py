@@ -90,6 +90,10 @@ def handleGroupCommand(update, context):
 @log_on_fail(debug_group)
 def handleGroupForward(update, context):
 	msg = update.message
+	if not msg:
+		log(str(update.effective_message))
+		log(str(update))
+		return
 	setting = gs.get(msg.chat_id)
 	if not setting.delete_if_message_is_forward:
 		return
