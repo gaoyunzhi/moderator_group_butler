@@ -6,8 +6,10 @@ from telegram import ChatPermissions
 from telegram_util import log_on_fail, TimedDeleter, matchKey, log
 import yaml
 from group_setting import GroupSetting
+from db import DB
 
 td = TimedDeleter()
+db = DB()
 
 with open('credentials') as f:
     credentials = yaml.load(f, Loader=yaml.FullLoader)
@@ -100,6 +102,10 @@ def handleGroupForward(update, context):
 	if not setting.delete_if_message_is_forward:
 		return
 	if isAdminMsg(msg):
+		return
+	print(msg.from_user.id)
+	print(db.whitelist)
+	if msg.from_user.id in db.whitelist:
 		return
 	if setting.warning_on_message_delete:
 		replyText(msg, setting.warning_on_message_delete, 5)
