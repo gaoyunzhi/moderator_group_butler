@@ -93,10 +93,7 @@ def handleGroupCommand(update, context):
 def handleGroupForward(update, context):
 	msg = update.message
 	if not msg:
-		debug_group.send_message('no message for forward message')
-		debug_group.send_message(str(update.effective_message))
-		debug_group.send_message(str(update))
-		return
+		return # edited message, from channel to group
 	setting = gs.get(msg.chat_id)
 	if not setting.delete_if_message_is_forward:
 		return
