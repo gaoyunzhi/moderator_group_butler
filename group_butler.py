@@ -3,7 +3,7 @@
 
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram import ChatPermissions
-from telegram_util import log_on_fail, TimedDeleter, matchKey
+from telegram_util import log_on_fail, TimedDeleter, matchKey, log
 import yaml
 from group_setting import GroupSetting
 
@@ -91,8 +91,9 @@ def handleGroupCommand(update, context):
 def handleGroupForward(update, context):
 	msg = update.message
 	if not msg:
-		log(str(update.effective_message))
-		log(str(update))
+		debug_group.send_message('no message for forward message')
+		debug_group.send_message(str(update.effective_message))
+		debug_group.send_message(str(update))
 		return
 	setting = gs.get(msg.chat_id)
 	if not setting.delete_if_message_is_forward:
