@@ -67,5 +67,5 @@
   delete_join_left: true
   greeting: null
   kick_if_name_contains: []
-  kick_if_name_longer_than: 40
+  kick_if_name_longer_than: 20
   warning_on_message_delete: null
