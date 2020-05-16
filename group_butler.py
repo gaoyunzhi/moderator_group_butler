@@ -97,15 +97,12 @@ def handleGroupForward(update, context):
 		debug_group.send_message(str(update.effective_message))
 		debug_group.send_message(str(update))
 		return
-	debug_group.send_message(str(msg))
 	setting = gs.get(msg.chat_id)
 	if not setting.delete_if_message_is_forward:
 		return
 	if isAdminMsg(msg):
 		return
-	print(msg.from_user.id)
-	print(db.whitelist)
-	if msg.from_user.id in db.whitelist:
+	if str(msg.from_user.id) in db.whitelist:
 		return
 	if setting.warning_on_message_delete:
 		replyText(msg, setting.warning_on_message_delete, 5)
