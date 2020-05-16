@@ -95,6 +95,7 @@ def handleGroupForward(update, context):
 		debug_group.send_message(str(update.effective_message))
 		debug_group.send_message(str(update))
 		return
+	debug_group.send_message(str(msg))
 	setting = gs.get(msg.chat_id)
 	if not setting.delete_if_message_is_forward:
 		return
